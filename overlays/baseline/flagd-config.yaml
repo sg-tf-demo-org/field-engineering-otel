@@ -1,4 +1,4 @@
-# Managed by otel-sre-demo GitOps overlay — do not edit by hand in-cluster for demos.
+# Managed by field-engineering-otel — DEMO: productCatalogFailure=on (will be fixed via PR)
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -38,7 +38,7 @@ data:
             "on": true,
             "off": false
           },
-          "defaultVariant": "off"
+          "defaultVariant": "on"
         },
         "recommendationCacheFailure": {
           "description": "Fail recommendation service cache",
