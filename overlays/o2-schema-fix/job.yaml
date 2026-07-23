@@ -1,0 +1,73 @@
+# One-shot Job: restore reviews.productreviews.score after O2 schema drift.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-sre-o2-schema-fix
+  namespace: otel-demo
+  labels:
+    team: otel-demo
+    scenario: O2
+    otel-sre-demo: "true"
+data:
+  fix.sql: |
+    -- Restore column expected by product-reviews (score NUMERIC(2,1))
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'reviews' AND table_name = 'productreviews' AND column_name = 'rating'
+      ) AND NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'reviews' AND table_name = 'productreviews' AND column_name = 'score'
+      ) THEN
+        ALTER TABLE reviews.productreviews RENAME COLUMN rating TO score;
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'reviews' AND table_name = 'productreviews' AND column_name = 'score'
+      ) THEN
+        ALTER TABLE reviews.productreviews ADD COLUMN score NUMERIC(2,1) NOT NULL DEFAULT 0;
+      END IF;
+    END $$;
+
+    GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA reviews TO otelu;
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: otel-sre-o2-schema-fix
+  namespace: otel-demo
+  labels:
+    team: otel-demo
+    scenario: O2
+    otel-sre-demo: "true"
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: otel-sre-o2-schema-fix
+        team: otel-demo
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: psql
+          image: postgres:17.6
+          env:
+            - name: PGPASSWORD
+              value: otel
+          command:
+            - bash
+            - -ec
+            - |
+              # Superuser required to rename columns created by init.sql (owner=root)
+              psql -h postgresql -U root -d otel -v ON_ERROR_STOP=1 -f /sql/fix.sql
+          volumeMounts:
+            - name: sql
+              mountPath: /sql
+      volumes:
+        - name: sql
+          configMap:
+            name: otel-sre-o2-schema-fix

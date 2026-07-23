@@ -1,0 +1,46 @@
+# O3 fault: artificially low memory limits → OOMKilled under load-generator.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-reviews
+  namespace: otel-demo
+  labels:
+    otel-sre-demo: "true"
+    scenario: O3
+spec:
+  template:
+    metadata:
+      annotations:
+        otel-sre-demo/scenario: O3
+        otel-sre-demo/failure_class: infra.capacity
+    spec:
+      containers:
+        - name: product-reviews
+          resources:
+            limits:
+              memory: 16Mi
+            requests:
+              memory: 8Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgresql
+  namespace: otel-demo
+  labels:
+    otel-sre-demo: "true"
+    scenario: O3
+spec:
+  template:
+    metadata:
+      annotations:
+        otel-sre-demo/scenario: O3
+        otel-sre-demo/failure_class: infra.capacity
+    spec:
+      containers:
+        - name: postgresql
+          resources:
+            limits:
+              memory: 32Mi
+            requests:
+              memory: 16Mi
