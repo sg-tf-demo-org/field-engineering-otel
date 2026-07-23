@@ -1,4 +1,4 @@
-# Managed by field-engineering-otel — DEMO: productCatalogFailure=on (will be fixed via PR)
+# Managed by field-engineering-otel — productCatalogFailure=off
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -38,7 +38,7 @@ data:
             "on": true,
             "off": false
           },
-          "defaultVariant": "on"
+          "defaultVariant": "off"
         },
         "recommendationCacheFailure": {
           "description": "Fail recommendation service cache",
